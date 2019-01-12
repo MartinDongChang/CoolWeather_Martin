@@ -20,8 +20,9 @@ public class Utility {
                     Province province = new Province();
                     province.setProvinceName(provinceObject.getString("name"));
                     province.setProvinceCode(provinceObject.getInt("id"));
-                    province.save();
+//                    province.save();
                 }
+                return true;
             }catch (JSONException e){
                 e.printStackTrace();
             }
@@ -41,6 +42,7 @@ public class Utility {
                     city.setProvinceId(provinceId);
                     city.save();
                 }
+                return true;
             }catch(JSONException e){
                 e.printStackTrace();
             }
