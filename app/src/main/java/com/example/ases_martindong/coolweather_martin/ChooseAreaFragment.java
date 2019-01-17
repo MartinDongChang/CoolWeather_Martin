@@ -2,6 +2,8 @@ package com.example.ases_martindong.coolweather_martin;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.ColorSpace;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -24,6 +26,7 @@ import com.example.ases_martindong.coolweather_martin.util.HttpUtil;
 import com.example.ases_martindong.coolweather_martin.util.Utility;
 
 import org.litepal.crud.DataSupport;
+import org.litepal.tablemanager.Connector;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,6 +34,7 @@ import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.Connection;
 import okhttp3.Response;
 
 
@@ -55,8 +59,8 @@ public class ChooseAreaFragment extends Fragment {
     private OnFragmentInteractionListener mListener;
 
     public static final int LEVEL_PIOVINCE = 0;
-    public static final int LEVEL_CITY =  0;
-    public static final int LEVEL_COUNTY = 0;
+    public static final int LEVEL_CITY =  1;
+    public static final int LEVEL_COUNTY = 2;
 
     private ProgressDialog progressDialog;
     private TextView titleText;
@@ -74,6 +78,7 @@ public class ChooseAreaFragment extends Fragment {
     private County selcetCounty;
     private int currentLevel; //当前选中的级别
 
+    private char i;
     /**
      * 这里是构造函数
      */
@@ -97,6 +102,16 @@ public class ChooseAreaFragment extends Fragment {
         args.putString(ARG_PARAM2, param2);
         fragment.setArguments(args);
         return fragment;
+    }
+
+    //初始化数据库
+    private void initDb(){
+        SQLiteDatabase db = Connector.getDatabase();
+        Province provinceTest = new Province();
+        provinceTest.setId(0);
+        provinceTest.setProvinceName("菏泽");
+        provinceTest.setProvinceCode(43);
+        provinceTest.save();
     }
 
     @Override
@@ -168,6 +183,7 @@ public class ChooseAreaFragment extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if(currentLevel == LEVEL_PIOVINCE){
                     selectProvincc = provinceList.get(position);
+                    queryCities();
                 }else if (currentLevel == LEVEL_CITY) {
                     selectCity = cityList.get(position);
                     queryCounties();
@@ -184,7 +200,8 @@ public class ChooseAreaFragment extends Fragment {
                 }
             }
         });
-       queryProvinces();
+//        initDb();
+        queryProvinces();
     }
 
     /**
@@ -195,13 +212,13 @@ public class ChooseAreaFragment extends Fragment {
         backButton.setVisibility(View.GONE);
         provinceList = DataSupport.findAll(Province.class);
         if(provinceList.size()>0){
-              dataList.clear();
-//            for(Province province:provinceList){
-//                dataList.add(province.getProvinceName());
-//            }
-//            adapter.notifyDataSetChanged();
-//            listView.setSelection(0);
-//            currentLevel = LEVEL_PIOVINCE;
+             dataList.clear();
+            for(Province province:provinceList){
+                dataList.add(province.getProvinceName());
+            }
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
+            currentLevel = LEVEL_PIOVINCE;
         }else{
             String address = "http://guolin.tech/api/china";
             queryFromServer(address, "province");
@@ -213,20 +230,20 @@ public class ChooseAreaFragment extends Fragment {
     private void queryCities() {
         titleText.setText(selectProvincc.getProvinceName());
         backButton.setVisibility(View.VISIBLE);
-//        cityList = DataSupport.where("provinceid = ?", String.valueOf(selectProvincc.getId())).find(City.class);
-//        if (cityList.size() > 0) {
-//            dataList.clear();
-//            for (City city : cityList) {
-//                dataList.add(city.getCityName());
-//            }
-//            adapter.notifyDataSetChanged();
-//            listView.setSelection(0);
-//            currentLevel = LEVEL_CITY;
-//        } else {
+        cityList = DataSupport.where("provinceid = ?", String.valueOf(selectProvincc.getId())).find(City.class);
+        if (cityList.size() > 0) {
+            dataList.clear();
+            for (City city : cityList) {
+                dataList.add(city.getCityName());
+            }
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
+            currentLevel = LEVEL_CITY;
+        } else {
             int provinceCode = selectProvincc.getProvinceCode();
             String address = "http://guolin.tech/api/china/" + provinceCode;
             queryFromServer(address, "city");
-//        }
+        }
     }
     /**
      * 查询选中市内所有的县，优先从数据库查询，如果没有查询到再去服务器上查询
@@ -234,23 +251,23 @@ public class ChooseAreaFragment extends Fragment {
     private void queryCounties() {
         titleText.setText(selectCity.getCityName());
         backButton.setVisibility(View.VISIBLE);
-//        countyList = DataSupport.where("cityid = ?", String.valueOf(selectCity.
-//                getId())).find(County.class);
-//        if (countyList.size() > 0) {
-//            dataList.clear();
-//            for (County county : countyList) {
-//                dataList.add(county.getCountyName());
-//            }
-//            adapter.notifyDataSetChanged();
-//            listView.setSelection(0);
-//            currentLevel = LEVEL_COUNTY;
-//        } else {
+        countyList = DataSupport.where("cityid = ?", String.valueOf(selectCity.
+                getId())).find(County.class);
+        if (countyList.size() > 0) {
+            dataList.clear();
+            for (County county : countyList) {
+                dataList.add(county.getCountyName());
+            }
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
+            currentLevel = LEVEL_COUNTY;
+        } else {
             int provinceCode = selectProvincc.getProvinceCode();
             int cityCode = selectCity.getCityCode();
             String address = "http://guolin.tech/api/china/" + provinceCode + "/" +
                     cityCode;
             queryFromServer(address, "county");
-//        }
+        }
     }
 
     /**
@@ -259,8 +276,7 @@ public class ChooseAreaFragment extends Fragment {
      */
     private void queryFromServer(String address,final String type){
         showProgressDialog();
-        HttpUtil.sendOkHttpRequest(address, new Callback() {
-
+        HttpUtil.sendOkHttpRequest(address, new okhttp3.Callback() {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String resposeText = response.body().string();
@@ -275,21 +291,23 @@ public class ChooseAreaFragment extends Fragment {
                             selectCity.getId());
                 }
                 if (result){
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            closeProgressDialog();
-                            if ("province".equals(type)) {
-                                queryProvinces();
-                            } else if ("city".equals(type)) {
-                                queryCities();
-                            } else if ("county".equals(type)) {
-                                queryCounties();
+                    if(getActivity() != null) {
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                closeProgressDialog();
+                                if ("province".equals(type)) {
+                                    queryProvinces();
+                                } else if ("city".equals(type)) {
+                                    queryCities();
+                                } else if ("county".equals(type)) {
+                                    queryCounties();
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
-            }
+             }
             @Override
             public void onFailure(Call call, IOException e) {
                 getActivity().runOnUiThread(new Runnable() {

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<litpal>
-    <dbname value="CoolWeather_Martin"></dbname>
-    <version value="1"></version>
+<litepal>
+    <dbname value="CoolWeather_Db"></dbname>
+    <version value="2"></version>
     <list>
-        <mapping class="com.example.sqltest.ases_martindong.coolweather_martin.andronid.db.Province"></mapping>
-        <mapping class="com.example.sqltest.ases_martindong.coolweather_martin.andronid.db.City"></mapping>
-        <mapping class="com.example.sqltest.ases_martindong.coolweather_martin.andronid.db.County"></mapping>
-   </list>
-</litpal>
+        <mapping class="com.example.ases_martindong.coolweather_martin.db.Province"></mapping>
+        <mapping class="com.example.ases_martindong.coolweather_martin.db.City"></mapping>
+        <mapping class="com.example.ases_martindong.coolweather_martin.db.County"></mapping>
+    </list>
+</litepal>
